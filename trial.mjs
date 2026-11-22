@@ -53,29 +53,31 @@ const PROVIDERS = {
   daytona: {
     pkg: '@daytona/sdk',
     env: ['DAYTONA_API_KEY'],
-    // Stopped and paused sandboxes are both billed for disk only; pause also keeps memory.
-    primitive: 'pause() (memory + disk) -> resume()',
+    // Dashboard API keys are rejected by the v2 API (401 on create) but work on v0, so the v0 client is used.
+    // pause() (memory) is refused on the default container sandbox ("Pausing is not supported for this
+    // sandbox"); docs limit it to VM sandboxes. stop() keeps the disk and is billed the same.
+    primitive: 'v0 API: stop() (disk only; pause() refused on container sandboxes) -> start()',
     async create(c) {
       const { Daytona } = await import('@daytona/sdk');
-      c.sbx = await new Daytona().v2.create(); // platform default image and size
-      // create() returns when its wait ends, even if the sandbox has not started yet.
-      if (c.sbx.state !== 'started') await c.sbx.wait({ timeoutSeconds: 120 });
+      c.sbx = await new Daytona().v0.create(undefined, { timeout: 120 }); // default image and size
     },
     async run(c, script) {
-      const r = await c.sbx.exec(script);
-      if (r.exitCode !== 0) throw new Error(`exit ${r.exitCode ?? r.reason}: ${r.stderr}`);
-      return r.stdout;
+      // Pass the script as base64 so no quoting can change it, whether or not executeCommand uses a shell.
+      const b64 = Buffer.from(script).toString('base64');
+      const r = await c.sbx.process.executeCommand(`sh -c "echo ${b64} | base64 -d | sh"`, undefined, undefined, 120);
+      if (r.exitCode !== 0) throw new Error(`exit ${r.exitCode}: ${r.result}`);
+      return r.result;
     },
-    async sleep(c) { await c.sbx.pause({ timeoutSeconds: 120 }); },
-    async wake(c) { await c.sbx.resume({ timeoutSeconds: 120 }); },
-    async destroy(c) { if (c.sbx) await c.sbx.delete({ timeoutSeconds: 120 }); },
+    async sleep(c) { await c.sbx.stop(120); },
+    async wake(c) { await c.sbx.start(120); },
+    async destroy(c) { if (c.sbx) await c.sbx.delete(120); },
   },
 
   sprites: {
     pkg: '@fly/sprites',
     env: ['SPRITES_TOKEN'],
     // The SDK has no sleep call: a Sprite pauses itself after about 30 s without exec activity.
-    primitive: 'idle auto-pause (no SDK call; polled getSprite().status until warm or cold) -> next exec wakes it',
+    primitive: 'idle auto-pause (no SDK call; 45 s idle wait, then polled getSprite().status until warm or cold) -> next exec wakes it',
     async create(c) {
       const { SpritesClient } = await import('@fly/sprites');
       c.client = new SpritesClient(env('SPRITES_TOKEN'));
@@ -86,10 +88,14 @@ const PROVIDERS = {
       return String((await c.sprite.execFile('sh', ['-c', script])).stdout);
     },
     async sleep(c) {
-      const end = Date.now() + STEP_TIMEOUT_MS;
+      // The first run saw "cold" 170 ms after the last exec while the sleeper still ran, so status
+      // reported then is not a real pause. Wait past the ~30 s idle window before trusting it.
+      const before = (await c.client.getSprite(c.sprite.name)).status;
+      await delay(45_000);
+      const end = Date.now() + STEP_TIMEOUT_MS - 50_000;
       while (Date.now() < end) {
         const { status } = await c.client.getSprite(c.sprite.name);
-        if (status === 'warm' || status === 'cold') return `reached ${status}`;
+        if (status === 'warm' || status === 'cold') return `status ${before} at start, reached ${status} after idle wait`;
         await delay(2000);
       }
       throw new Error('Sprite did not report warm or cold');

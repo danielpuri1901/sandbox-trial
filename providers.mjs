@@ -17,13 +17,14 @@ export const PROVIDERS = {
     primitive: 'pause() (default mode "full": memory + filesystem) -> connect()',
     async create(c) {
       const { Sandbox } = await import('e2b');
-      c.sbx = await Sandbox.create();
+      // The default lifetime is 5 minutes, shorter than an agent awake period; 1 h is the Hobby maximum.
+      c.sbx = await Sandbox.create({ timeoutMs: 3_600_000 });
     },
     async run(c, script) {
       return (await c.sbx.commands.run(script)).stdout; // throws CommandExitError on a non-zero exit
     },
     async sleep(c) { await c.sbx.pause(); },
-    async wake(c) { await c.sbx.connect(); },
+    async wake(c) { await c.sbx.connect({ timeoutMs: 3_600_000 }); },
     async destroy(c) { if (c.sbx) await c.sbx.kill(); },
   },
 
@@ -120,7 +121,8 @@ export const PROVIDERS = {
       const app = await c.modal.apps.fromName('sandbox-trial', { createIfMissing: true });
       // Modal has no default image; Debian slim is close to the Debian/Ubuntu images the other providers boot.
       const image = c.modal.images.fromRegistry('debian:bookworm-slim');
-      c.sb = await c.modal.sandboxes.create(app, image, { experimentalEnableSnapshot: true });
+      // The default lifetime is 5 minutes, shorter than an agent awake period.
+      c.sb = await c.modal.sandboxes.create(app, image, { experimentalEnableSnapshot: true, timeoutMs: 3_600_000 });
     },
     async run(c, script) {
       const p = await c.sb.exec(['sh', '-c', script]);

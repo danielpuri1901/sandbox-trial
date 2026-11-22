@@ -862,7 +862,8 @@ const opts = {
   buyerText: v['buyer-text'],
   buyerPool: { tokens: 0 },
   notices: existsSync(NOTICES) ? JSON.parse(readFileSync(NOTICES, 'utf8')).notices : [],
-  runId: `${new Date().toISOString().replace(/[:.]/g, '-')}-seed${seed}`,
+  // Unique across processes started in the same millisecond, so two runs never share home copies.
+  runId: `${new Date().toISOString().replace(/[:.]/g, '-')}-seed${seed}-${randomBytes(3).toString('hex')}`,
 };
 // The model key: for the Pi agent, and for the buyer model with --buyer-text llm.
 if (!opts.fake || opts.buyerText === 'llm') {

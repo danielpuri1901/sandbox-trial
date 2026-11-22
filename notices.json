@@ -1,0 +1,1354 @@
+{
+ "licence": "Contains public sector information licensed under the Open Government Licence v3.0.",
+ "source": "https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages",
+ "fetched_at": "2026-11-22T14:39:35.045Z",
+ "query": {
+  "from": "2024-11-22",
+  "to": "2026-11-22",
+  "stages": [
+   "tender",
+   "planning",
+   "award"
+  ],
+  "cpv_prefixes": [
+   "45241",
+   "45243",
+   "45244",
+   "45246",
+   "45247",
+   "452622"
+  ],
+  "pages": 200,
+  "max_codes": 25
+ },
+ "notices": [
+  {
+   "ocid": "ocds-h6vhtk-07c0c2",
+   "releases": [
+    {
+     "release_id": "110327-2026",
+     "date": "2026-11-20T16:31:47Z",
+     "tag": [
+      "tender"
+     ],
+     "buyer": "Caledonian Maritime Assets Ltd (Utility)",
+     "title": "Contractor Services Framework Agreement",
+     "value": {
+      "amount": 900000000,
+      "currency": "GBP"
+     },
+     "deadline": "2027-01-22T12:00:00Z",
+     "locality": "Port Glasgow",
+     "region": "UKM",
+     "location": "Ports and Harbours operated by Clyde and Hebridean Ferry Services (CHFS). This network takes in the Western Isles, Highlands, Argyle & Bute, the West the Clyde Estuary.",
+     "cpv": [
+      "45000000",
+      "45220000",
+      "45200000",
+      "45222000",
+      "45243600",
+      "45111250",
+      "45315100",
+      "45351000"
+     ]
+    }
+   ]
+  },
+  {
+   "ocid": "ocds-h6vhtk-07c0a1",
+   "releases": [
+    {
+     "release_id": "110268-2026",
+     "date": "2026-11-20T15:33:26Z",
+     "tag": [
+      "tender"
+     ],
+     "buyer": "Caledonian Maritime Assets Ltd (Utility)",
+     "title": "Contractor Services Framework Agreement",
+     "value": {
+      "amount": 900000000,
+      "currency": "GBP"
+     },
+     "deadline": "2027-01-22T12:00:00Z",
+     "locality": "Port Glasgow",
+     "region": "UKM",
+     "location": "Ports and Harbours operated by Clyde and Hebridean Ferry Services (CHFS). This network takes in the Western Isles, Highlands, Argyle & Bute, the West the Clyde Estuary.",
+     "cpv": [
+      "45000000",
+      "45220000",
+      "45200000",
+      "45222000",
+      "45243600",
+      "45111250",
+      "45315100",
+      "45351000"
+     ]
+    }
+   ]
+  },
+  {
+   "ocid": "ocds-h6vhtk-07c09f",
+   "releases": [
+    {
+     "release_id": "110266-2026",
+     "date": "2026-11-20T15:31:01Z",
+     "tag": [
+      "tender"
+     ],
+     "buyer": "Caledonian Maritime Assets Ltd (Utility)",
+     "title": "Contractor Services Framework Agreement",
+     "value": {
+      "amount": 900000000,
+      "currency": "GBP"
+     },
+     "deadline": "2027-01-22T12:00:00Z",
+     "locality": "Port Glasgow",
+     "region": "UKM",
+     "location": "Ports and Harbours operated by Clyde and Hebridean Ferry Services (CHFS). This network takes in the Western Isles, Highlands, Argyle & Bute, the West the Clyde Estuary.",
+     "cpv": [
+      "45000000",
+      "45220000",
+      "45200000",
+      "45222000",
+      "45243600",
+      "45111250",
+      "45315100",
+      "45351000"
+     ]
+    }
+   ]
+  },
+  {
+   "ocid": "ocds-h6vhtk-077ffc",
+   "releases": [
+    {
+     "release_id": "093459-2026",
+     "date": "2026-10-02T15:24:29+01:00",
+     "tag": [
+      "tender"
+     ],
+     "buyer": "Kishorn Port Limited",
+     "title": "Kishorn Port - Phase 1B - East Quay Development",
+     "value": {
+      "amount": 30000000,
+      "currency": "GBP"
+     },
+     "deadline": "2026-11-02T12:00:00Z",
+     "locality": "Dingwall",
+     "region": "UKM6",
+     "location": "Kishorn Port, Kishorn",
+     "cpv": [
+      "45241000"
+     ]
+    }
+   ]
+  },
+  {
+   "ocid": "ocds-h6vhtk-077af5",
+   "releases": [
+    {
+     "release_id": "091183-2026",
+     "date": "2026-09-25T17:02:34+01:00",
+     "tag": [
+      "tender"
+     ],
+     "buyer": "Montrose Port Authority",
+     "title": "Berths 9-10-11 Construction, Montrose Port",
+     "value": {
+      "amount": 35000000,
+      "currency": "GBP"
+     },
+     "deadline": "2026-10-16T12:00:00+01:00",
+     "locality": "Montrose",
+     "region": "UKM71",
+     "location": "Montrose Port",
+     "cpv": [
+      "45241000"
+     ]
+    }
+   ]
+  },
+  {
+   "ocid": "ocds-h6vhtk-06d417",
+   "releases": [
+    {
+     "release_id": "070696-2026",
+     "date": "2026-07-27T11:20:48+01:00",
+     "tag": [
+      "tender"
+     ],
+     "buyer": "Fife Council",
+     "title": "EF0112 Expansion of river level monitoring network",
+     "value": null,
+     "deadline": "2026-08-26T11:00:00+01:00",
+     "locality": "Glenrothes",
+     "region": "UKM72",
+     "location": null,
+     "cpv": [
+      "50324100",
+      "35125100",
+      "45246000",
+      "51210000"
+     ]
+    }
+   ]
+  },
+  {
+   "ocid": "ocds-h6vhtk-0605ec",
+   "releases": [
+    {
+     "release_id": "003202-2026",
+     "date": "2026-01-14T15:50:20Z",
+     "tag": [
+      "planning"
+     ],
+     "buyer": "Transport Scotland",
+     "title": "A9 Dualling Delivery Framework Agreement",
+     "value": {
+      "amount": 1936000000,
+      "currency": "GBP"
+     },
+     "deadline": null,
+     "locality": "Glasgow",
+     "region": "UKM62",
+     "location": "Various locations along the A9 between Perth and Inverness.",
+     "cpv": [
+      "45233100",
+      "45111000",
+      "45221220",
+      "45221111",
+      "45233120",
+      "45233124",
+      "45233125",
+      "45233161",
+      "45233162",
+      "45233224",
+      "45233226",
+      "45233290",
+      "45262640",
+      "45233222",
+      "45112000",
+      "45112730",
+      "45233128",
+      "45233280",
+      "45246200",
+      "45316210",
+      "45454100",
+      "45221112",
+      "45112100"
+     ]
+    }
+   ]
+  },
+  {
+   "ocid": "ocds-h6vhtk-0607bd",
+   "releases": [
+    {
+     "release_id": "003934-2026",
+     "date": "2026-01-16T14:17:32Z",
+     "tag": [
+      "tender"
+     ],
+     "buyer": "Belfast City Council",
+     "title": "PEACEPLUS Works Contractor for Reconnected Belfast Project at Waterworks and Alexandra Park",
+     "value": null,
+     "deadline": "2026-02-16T12:00:00Z",
+     "locality": "Belfast",
+     "region": "UKN06",
+     "location": null,
+     "cpv": [
+      "45000000",
+      "45112710",
+      "45212100",
+      "45212290",
+      "45233210",
+      "45233262",
+      "45233293",
+      "45247270"
+     ]
+    }
+   ]
+  },
+  {
+   "ocid": "ocds-h6vhtk-056974",
+   "releases": [
+    {
+     "release_id": "044432-2025",
+     "date": "2025-07-30T16:13:54+01:00",
+     "tag": [
+      "tender"
+     ],
+     "buyer": "Scottish Government",
+     "title": "DMARINE-Compliance-Marine Operations-RADAR replacement",
+     "value": {
+      "amount": 200000,
+      "currency": "GBP"
+     },
+     "deadline": "2025-09-01T12:00:00+01:00",
+     "locality": "Edinburgh",
+     "region": "UKM",
+     "location": null,
+     "cpv": [
+      "34511100",
+      "34930000",
+      "35722000",
+      "38115000",
+      "45244100"
+     ]
+    }
+   ]
+  },
+  {
+   "ocid": "ocds-h6vhtk-04f96b",
+   "releases": [
+    {
+     "release_id": "011521-2025",
+     "date": "2025-03-27T12:13:16Z",
+     "tag": [
+      "planning"
+     ],
+     "buyer": "Orkney Islands Council",
+     "title": "Orkney Community Wind Farms (OCWF) - Balance of Plant Contract",
+     "value": {
+      "amount": 20000000,
+      "currency": "GBP"
+     },
+     "deadline": null,
+     "locality": "Kirkwall",
+     "region": "UKM65",
+     "location": "Orkney Islands, Mainland and Faray",
+     "cpv": [
+      "45200000",
+      "45220000",
+      "45223500",
+      "45232200",
+      "45232220",
+      "45233226",
+      "45244000",
+      "45244200"
+     ]
+    },
+    {
+     "release_id": "043429-2025",
+     "date": "2025-07-28T12:34:25+01:00",
+     "tag": [
+      "tender"
+     ],
+     "buyer": "Orkney Islands Council",
+     "title": "Orkney Community Wind Farms (OCWF) - Balance of Plant Contract",
+     "value": {
+      "amount": 18000000,
+      "currency": "GBP"
+     },
+     "deadline": "2025-08-27T12:00:00+01:00",
+     "locality": "Kirkwall",
+     "region": "UKM65",
+     "location": "Faray, Orkney Islands",
+     "cpv": [
+      "45200000",
+      "45220000",
+      "45223500",
+      "45232200",
+      "45232220",
+      "45233226",
+      "45244000",
+      "45244200"
+     ]
+    }
+   ]
+  },
+  {
+   "ocid": "ocds-h6vhtk-0509e3",
+   "releases": [
+    {
+     "release_id": "017878-2025",
+     "date": "2025-04-30T10:56:16+01:00",
+     "tag": [
+      "planning"
+     ],
+     "buyer": "Transport Scotland",
+     "title": "A9 Dualling: Pitlochry to Killiecrankie",
+     "value": {
+      "amount": 205000000,
+      "currency": "GBP"
+     },
+     "deadline": null,
+     "locality": "Glasgow",
+     "region": "UKM77",
+     "location": "A9 trunk road from a point approximately 1km south of the existing Tummel underbridge, to the southern end of the existing dual carriageway at the Pass of Killiecrankie.",
+     "cpv": [
+      "45233100",
+      "45111000",
+      "45221220",
+      "45221111",
+      "45221112",
+      "45233120",
+      "45233124",
+      "45233125",
+      "45233161",
+      "45233162",
+      "45233224",
+      "45233226",
+      "45233290",
+      "45262640",
+      "45233222",
+      "45112000",
+      "45112730",
+      "45233128",
+      "45233280",
+      "45246200",
+      "45316210",
+      "45454100",
+      "45316110"
+     ]
+    },
+    {
+     "release_id": "042771-2025",
+     "date": "2025-07-24T13:42:50+01:00",
+     "tag": [
+      "tender"
+     ],
+     "buyer": "Transport Scotland",
+     "title": "A9 Dualling: Pitlochry to Killiecrankie project",
+     "value": {
+      "amount": 205000000,
+      "currency": "GBP"
+     },
+     "deadline": "2025-09-04T12:00:00+01:00",
+     "locality": "Glasgow",
+     "region": "UKM77",
+     "location": "A9 trunk road from a point approximately 1km south of the existing Tummel underbridge, to the southern end of the existing dual carriageway at the Pass of Killiecrankie.",
+     "cpv": [
+      "45233100",
+      "45111000",
+      "45221220",
+      "45221111",
+      "45221112",
+      "45233120",
+      "45233124",
+      "45233125",
+      "45233161",
+      "45233162",
+      "45233224",
+      "45233226",
+      "45233290",
+      "45262640",
+      "45233222",
+      "45112000",
+      "45112730",
+      "45233128",
+      "45233280",
+      "45246200",
+      "45316210",
+      "45454100",
+      "50230000",
+      "45316110"
+     ]
+    }
+   ]
+  },
+  {
+   "ocid": "ocds-h6vhtk-056544",
+   "releases": [
+    {
+     "release_id": "042670-2025",
+     "date": "2025-07-24T11:34:45+01:00",
+     "tag": [
+      "tender"
+     ],
+     "buyer": "Powys County Council",
+     "title": "Dynamic Purchasing System for the Provision of Highways and Civil Engineering Works within Powys, Mid Wales",
+     "value": {
+      "amount": 4000000,
+      "currency": "GBP"
+     },
+     "deadline": "2029-02-23T12:00:00Z",
+     "locality": "Llandrindod Wells",
+     "region": "UKL24",
+     "location": null,
+     "cpv": [
+      "45200000",
+      "45000000",
+      "45100000",
+      "45230000",
+      "45233000",
+      "45233100",
+      "45233200",
+      "45233300",
+      "45220000",
+      "45110000",
+      "45112700",
+      "45340000",
+      "45342000",
+      "45233161",
+      "45233253",
+      "45233340",
+      "45213312",
+      "45111240",
+      "45232451",
+      "45232452",
+      "45246400",
+      "45233223",
+      "45233251"
+     ]
+    }
+   ]
+  },
+  {
+   "ocid": "ocds-h6vhtk-042e31",
+   "releases": [
+    {
+     "release_id": "035974-2025",
+     "date": "2025-06-30T09:44:10+01:00",
+     "tag": [
+      "tender"
+     ],
+     "buyer": "Dumfries and Galloway Council",
+     "title": "Roads Civil Engineering Framework",
+     "value": {
+      "amount": 21000000,
+      "currency": "GBP"
+     },
+     "deadline": "2025-08-11T12:00:00+01:00",
+     "locality": "Dumfries",
+     "region": "UKM92",
+     "location": "Across Dumfries and Galloway",
+     "cpv": [
+      "45200000",
+      "45000000",
+      "45232450",
+      "45232451",
+      "45232452",
+      "34992200",
+      "45233000",
+      "45233100",
+      "45233120",
+      "45233121",
+      "45233140",
+      "45233220",
+      "45233290",
+      "45421148",
+      "45233125",
+      "45233226",
+      "45213312",
+      "45241000",
+      "45246400"
+     ]
+    },
+    {
+     "release_id": "034138-2026",
+     "date": "2026-04-15T12:06:12+01:00",
+     "tag": [
+      "award",
+      "contract"
+     ],
+     "buyer": "Dumfries and Galloway Council",
+     "title": "Roads Civil Engineering Framework",
+     "value": null,
+     "deadline": null,
+     "locality": "Dumfries",
+     "region": "UKM92",
+     "location": "Across Dumfries and Galloway",
+     "cpv": [
+      "45200000",
+      "45000000",
+      "45232450",
+      "45232451",
+      "45232452",
+      "34992200",
+      "45233000",
+      "45233100",
+      "45233120",
+      "45233121",
+      "45233140",
+      "45233220",
+      "45233290",
+      "45421148",
+      "45233125",
+      "45233226",
+      "45213312",
+      "45241000",
+      "45246400"
+     ]
+    }
+   ]
+  },
+  {
+   "ocid": "ocds-h6vhtk-0547f4",
+   "releases": [
+    {
+     "release_id": "032047-2025",
+     "date": "2025-06-12T15:56:38+01:00",
+     "tag": [
+      "tender"
+     ],
+     "buyer": "CalMac Ferries Limited",
+     "title": "Sewage Treatment Units",
+     "value": {
+      "amount": 480000,
+      "currency": "GBP"
+     },
+     "deadline": "2025-07-14T12:00:00+01:00",
+     "locality": "Gourock",
+     "region": "UKM",
+     "location": null,
+     "cpv": [
+      "42996000",
+      "45244100",
+      "50200000",
+      "34144520",
+      "42122220",
+      "45232420"
+     ]
+    }
+   ]
+  },
+  {
+   "ocid": "ocds-h6vhtk-052771",
+   "releases": [
+    {
+     "release_id": "027918-2025",
+     "date": "2025-05-28T08:52:28+01:00",
+     "tag": [
+      "tender"
+     ],
+     "buyer": "Caledonian Maritime Assets Ltd (Utility)",
+     "title": "Cumbrae Slipway Reconstruction",
+     "value": null,
+     "deadline": "2025-07-07T12:00:00+01:00",
+     "locality": "Port Glasgow",
+     "region": "UKM63",
+     "location": "Cumbrae, an Island in the Firth of Clyde, situated in the southwestern part of Scotland (Ayrshire Coast), near Glasgow.",
+     "cpv": [
+      "45000000",
+      "45200000",
+      "34953100",
+      "45241000"
+     ]
+    },
+    {
+     "release_id": "008464-2026",
+     "date": "2026-01-30T13:18:03Z",
+     "tag": [
+      "award",
+      "contract"
+     ],
+     "buyer": "Caledonian Maritime Assets Ltd (Utility)",
+     "title": "Cumbrae Slipway Reconstruction",
+     "value": null,
+     "deadline": null,
+     "locality": "Port Glasgow",
+     "region": "UKM63",
+     "location": "Cumbrae, an Island in the Firth of Clyde, situated in the southwestern part of Scotland (Ayrshire Coast), near Glasgow.",
+     "cpv": [
+      "45000000",
+      "45200000",
+      "34953100",
+      "45241000"
+     ]
+    }
+   ]
+  },
+  {
+   "ocid": "ocds-h6vhtk-04e9b1",
+   "releases": [
+    {
+     "release_id": "007999-2025",
+     "date": "2025-03-05T10:57:20Z",
+     "tag": [
+      "planning"
+     ],
+     "buyer": "Dumfries and Galloway Council",
+     "title": "Whitesands Project (Flood Protection Scheme & Public Realm Improvements) – Early Contractor Involvement & Main Works Construction",
+     "value": {
+      "amount": 37500000,
+      "currency": "GBP"
+     },
+     "deadline": null,
+     "locality": "Dumfries",
+     "region": "UKM92",
+     "location": "Whitesands, Dumfries",
+     "cpv": [
+      "45246400",
+      "45246410",
+      "45000000",
+      "71311300",
+      "71530000"
+     ]
+    },
+    {
+     "release_id": "017035-2025",
+     "date": "2025-04-25T13:39:38+01:00",
+     "tag": [
+      "tender"
+     ],
+     "buyer": "Dumfries and Galloway Council",
+     "title": "Whitesands Project (Flood Protection Scheme & Public Realm Improvements) – Early Contractor Involvement & Main Works Construction",
+     "value": {
+      "amount": 37500000,
+      "currency": "GBP"
+     },
+     "deadline": "2025-05-27T12:00:00+01:00",
+     "locality": "Dumfries",
+     "region": "UKM92",
+     "location": "Whitesands, Dumfries",
+     "cpv": [
+      "45246400",
+      "45246410",
+      "45000000",
+      "71311300",
+      "71530000"
+     ]
+    }
+   ]
+  },
+  {
+   "ocid": "ocds-h6vhtk-040d71",
+   "releases": [
+    {
+     "release_id": "004054-2025",
+     "date": "2025-02-06T17:03:12Z",
+     "tag": [
+      "tender"
+     ],
+     "buyer": "Southend-on-Sea City Council",
+     "title": "Infrastructure Maintenance and Improvements",
+     "value": {
+      "amount": 200000000,
+      "currency": "GBP"
+     },
+     "deadline": "2025-03-10T12:00:00Z",
+     "locality": "Southend on Sea",
+     "region": "UKH31",
+     "location": null,
+     "cpv": [
+      "45220000",
+      "45233000",
+      "45233139",
+      "45233141",
+      "45243000",
+      "71311220",
+      "71332000",
+      "90620000",
+      "90630000"
+     ]
+    }
+   ]
+  },
+  {
+   "ocid": "ocds-h6vhtk-04d425",
+   "releases": [
+    {
+     "release_id": "001679-2025",
+     "date": "2025-01-17T12:17:57Z",
+     "tag": [
+      "tender"
+     ],
+     "buyer": "Natural Resources Wales",
+     "title": "Marine Licencing and Specialists Advice Framework 2025",
+     "value": {
+      "amount": 3500000,
+      "currency": "GBP"
+     },
+     "deadline": "2025-03-18T13:00:00Z",
+     "locality": "Cardiff",
+     "region": "UKL",
+     "location": null,
+     "cpv": [
+      "98360000",
+      "71900000",
+      "73111000",
+      "71354500",
+      "73112000",
+      "98361000",
+      "90712300",
+      "90713000",
+      "77800000",
+      "45243000",
+      "75121000",
+      "80000000"
+     ]
+    }
+   ]
+  },
+  {
+   "ocid": "ocds-h6vhtk-04ce12",
+   "releases": [
+    {
+     "release_id": "000435-2025",
+     "date": "2025-01-08T09:32:05Z",
+     "tag": [
+      "tender"
+     ],
+     "buyer": "The Highland Council",
+     "title": "Corran Ferry Infrastructure Improvement Scheme (CFIIS)",
+     "value": {
+      "amount": 27000000,
+      "currency": "GBP"
+     },
+     "deadline": "2025-02-07T12:00:00Z",
+     "locality": "Inverness",
+     "region": "UKM6",
+     "location": "Ardgour - (201550, 763780), Nether Lochaber - (202340,763870)",
+     "cpv": [
+      "45000000",
+      "45244000",
+      "45233120",
+      "45252124",
+      "45310000"
+     ]
+    },
+    {
+     "release_id": "003820-2026",
+     "date": "2026-01-16T11:39:03Z",
+     "tag": [
+      "award",
+      "contract"
+     ],
+     "buyer": "The Highland Council",
+     "title": "Corran Ferry Infrastructure Improvement Scheme (CFIIS)",
+     "value": null,
+     "deadline": null,
+     "locality": "Inverness",
+     "region": "UKM6",
+     "location": "Ardgour - (201550, 763780), Nether Lochaber - (202340,763870)",
+     "cpv": [
+      "45000000",
+      "45244000",
+      "45233120",
+      "45252124",
+      "45310000"
+     ]
+    }
+   ]
+  },
+  {
+   "ocid": "ocds-h6vhtk-04c5c0",
+   "releases": [
+    {
+     "release_id": "039643-2024",
+     "date": "2024-12-09T15:23:26Z",
+     "tag": [
+      "tender"
+     ],
+     "buyer": "NHMF (NPC) LIMITED",
+     "title": "NHMF Frameworx Damp, Mould And Condensation Remediation, Surveying And Monitoring Works Agreements 2025",
+     "value": {
+      "amount": 500000000,
+      "currency": "GBP"
+     },
+     "deadline": "2025-01-24T15:00:00Z",
+     "locality": "MITCHAM",
+     "region": "UKC",
+     "location": null,
+     "cpv": [
+      "50700000",
+      "39714110",
+      "39717000",
+      "45261420",
+      "45262210",
+      "45331200",
+      "45331210",
+      "45400000",
+      "50800000",
+      "51100000",
+      "45410000",
+      "45442000",
+      "71315300",
+      "71315400",
+      "71315410",
+      "71351300",
+      "71355000"
+     ]
+    }
+   ]
+  },
+  {
+   "ocid": "ocds-h6vhtk-066b49",
+   "releases": [
+    {
+     "release_id": "023629-2026",
+     "date": "2026-03-16T15:15:13Z",
+     "tag": [
+      "planning"
+     ],
+     "buyer": "Glasgow City Council",
+     "title": "Custom House Quay - Quay Wall, Civil Infrastructure & Public Realm Works",
+     "value": null,
+     "deadline": null,
+     "locality": "Glasgow",
+     "region": "UKM82",
+     "location": "Glasgow City",
+     "cpv": [
+      "45000000",
+      "45200000",
+      "45211360",
+      "45244000",
+      "45220000"
+     ]
+    }
+   ]
+  },
+  {
+   "ocid": "ocds-h6vhtk-05ef60",
+   "releases": [
+    {
+     "release_id": "080016-2025",
+     "date": "2025-12-05T10:17:25Z",
+     "tag": [
+      "planning"
+     ],
+     "buyer": "Belfast City Council",
+     "title": "PEACEPLUS Works Contractor for Reconnected Belfast Project at Waterworks and Alexandra Park",
+     "value": {
+      "amount": 10700000,
+      "currency": "GBP"
+     },
+     "deadline": null,
+     "locality": "Belfast",
+     "region": "UK",
+     "location": null,
+     "cpv": [
+      "45000000",
+      "45112710",
+      "45212100",
+      "45212290",
+      "45233210",
+      "45233262",
+      "45233293",
+      "45247270"
+     ]
+    }
+   ]
+  },
+  {
+   "ocid": "ocds-h6vhtk-05107b",
+   "releases": [
+    {
+     "release_id": "020319-2025",
+     "date": "2025-05-12T09:57:54+01:00",
+     "tag": [
+      "planning"
+     ],
+     "buyer": "Caledonian Maritime Assets Ltd (Utility)",
+     "title": "SVRP Port Infrastructure Works",
+     "value": null,
+     "deadline": null,
+     "locality": "Port Glasgow",
+     "region": "UKM",
+     "location": "Colintraive, Portavadie, Tarbert Loch Fyne, Tobermory, Lochaline, Kilchoan, Largs, Fishnish",
+     "cpv": [
+      "45240000",
+      "45241000",
+      "45252124",
+      "45231400",
+      "44212400",
+      "45200000"
+     ]
+    }
+   ]
+  },
+  {
+   "ocid": "ocds-h6vhtk-04ec22",
+   "releases": [
+    {
+     "release_id": "008973-2025",
+     "date": "2025-03-12T13:04:31Z",
+     "tag": [
+      "planning"
+     ],
+     "buyer": "Argyll and Bute Council",
+     "title": "Craignure Pier & Ferry Terminal Works",
+     "value": null,
+     "deadline": null,
+     "locality": "Lochgilphead",
+     "region": "UKM63",
+     "location": "Craignure, Argyll",
+     "cpv": [
+      "45241300",
+      "45213341"
+     ]
+    }
+   ]
+  },
+  {
+   "ocid": "ocds-h6vhtk-048478",
+   "releases": [
+    {
+     "release_id": "016133-2026",
+     "date": "2026-02-23T14:38:16Z",
+     "tag": [
+      "award",
+      "contract"
+     ],
+     "buyer": "Powys County Council",
+     "title": "Award of Dynamic Purchasing System for the Provision of Highways and Civil Engineering Works across Powys",
+     "value": null,
+     "deadline": null,
+     "locality": "Llandrindod Wells",
+     "region": "UKL24",
+     "location": null,
+     "cpv": [
+      "45200000",
+      "45000000",
+      "45100000",
+      "45230000",
+      "45233000",
+      "45233100",
+      "45233200",
+      "45233300",
+      "45220000",
+      "45110000",
+      "45112700",
+      "45340000",
+      "45342000",
+      "45233161",
+      "45233253",
+      "45233340",
+      "45213312",
+      "45111240",
+      "45232451",
+      "45232452",
+      "45246400",
+      "45233223",
+      "45233251"
+     ]
+    },
+    {
+     "release_id": "051335-2026",
+     "date": "2026-06-01T12:14:51+01:00",
+     "tag": [
+      "award",
+      "contract"
+     ],
+     "buyer": "Powys County Council",
+     "title": "Award of Dynamic Purchasing System for the Provision of Highways and Civil Engineering Works across Powys",
+     "value": null,
+     "deadline": null,
+     "locality": "Llandrindod Wells",
+     "region": "UKL24",
+     "location": null,
+     "cpv": [
+      "45200000",
+      "45000000",
+      "45100000",
+      "45230000",
+      "45233000",
+      "45233100",
+      "45233200",
+      "45233300",
+      "45220000",
+      "45110000",
+      "45112700",
+      "45340000",
+      "45342000",
+      "45233161",
+      "45233253",
+      "45233340",
+      "45213312",
+      "45111240",
+      "45232451",
+      "45232452",
+      "45246400",
+      "45233223",
+      "45233251"
+     ]
+    },
+    {
+     "release_id": "079270-2026",
+     "date": "2026-08-20T09:02:19+01:00",
+     "tag": [
+      "award",
+      "contract"
+     ],
+     "buyer": "Powys County Council",
+     "title": "Award of Dynamic Purchasing System for the Provision of Highways and Civil Engineering Works across Powys",
+     "value": null,
+     "deadline": null,
+     "locality": "Llandrindod Wells",
+     "region": "UKL24",
+     "location": null,
+     "cpv": [
+      "45200000",
+      "45000000",
+      "45100000",
+      "45230000",
+      "45233000",
+      "45233100",
+      "45233200",
+      "45233300",
+      "45220000",
+      "45110000",
+      "45112700",
+      "45340000",
+      "45342000",
+      "45233161",
+      "45233253",
+      "45233340",
+      "45213312",
+      "45111240",
+      "45232451",
+      "45232452",
+      "45246400",
+      "45233223",
+      "45233251"
+     ]
+    },
+    {
+     "release_id": "105337-2026",
+     "date": "2026-11-05T15:27:22Z",
+     "tag": [
+      "award",
+      "contract"
+     ],
+     "buyer": "Powys County Council",
+     "title": "Award of Dynamic Purchasing System for the Provision of Highways and Civil Engineering Works across Powys",
+     "value": null,
+     "deadline": null,
+     "locality": "Llandrindod Wells",
+     "region": "UKL24",
+     "location": null,
+     "cpv": [
+      "45200000",
+      "45000000",
+      "45100000",
+      "45230000",
+      "45233000",
+      "45233100",
+      "45233200",
+      "45233300",
+      "45220000",
+      "45110000",
+      "45112700",
+      "45340000",
+      "45342000",
+      "45233161",
+      "45233253",
+      "45233340",
+      "45213312",
+      "45111240",
+      "45232451",
+      "45232452",
+      "45246400",
+      "45233223",
+      "45233251"
+     ]
+    },
+    {
+     "release_id": "105338-2026",
+     "date": "2026-11-05T15:27:45Z",
+     "tag": [
+      "award",
+      "contract"
+     ],
+     "buyer": "Powys County Council",
+     "title": "Award of Dynamic Purchasing System for the Provision of Highways and Civil Engineering Works across Powys",
+     "value": null,
+     "deadline": null,
+     "locality": "Llandrindod Wells",
+     "region": "UKL24",
+     "location": null,
+     "cpv": [
+      "45200000",
+      "45000000",
+      "45100000",
+      "45230000",
+      "45233000",
+      "45233100",
+      "45233200",
+      "45233300",
+      "45220000",
+      "45110000",
+      "45112700",
+      "45340000",
+      "45342000",
+      "45233161",
+      "45233253",
+      "45233340",
+      "45213312",
+      "45111240",
+      "45232451",
+      "45232452",
+      "45246400",
+      "45233223",
+      "45233251"
+     ]
+    }
+   ]
+  },
+  {
+   "ocid": "ocds-h6vhtk-0790f3",
+   "releases": [
+    {
+     "release_id": "101431-2026",
+     "date": "2026-10-27T11:28:54Z",
+     "tag": [
+      "award",
+      "contract"
+     ],
+     "buyer": "Gateshead Borough Council",
+     "title": "Watergate Lake Reservoir Spillway Reinforcement",
+     "value": null,
+     "deadline": null,
+     "locality": "Gateshead",
+     "region": "UKC2",
+     "location": null,
+     "cpv": [
+      "45247270"
+     ]
+    }
+   ]
+  },
+  {
+   "ocid": "ocds-h6vhtk-028ecc",
+   "releases": [
+    {
+     "release_id": "095868-2026",
+     "date": "2026-10-09T20:21:17+01:00",
+     "tag": [
+      "award",
+      "contract"
+     ],
+     "buyer": "Wessex Water Services Limited",
+     "title": "Civils Contractors (Minor Works) Framework Agreement",
+     "value": null,
+     "deadline": null,
+     "locality": "Bath",
+     "region": "UKK",
+     "location": null,
+     "cpv": [
+      "45231300",
+      "45113000",
+      "45221250",
+      "45222100",
+      "45222110",
+      "45231100",
+      "45232130",
+      "45232150",
+      "45232151",
+      "45232400",
+      "45232421",
+      "45232422",
+      "45232423",
+      "45232424",
+      "45232430",
+      "45232431",
+      "45232440",
+      "45232450",
+      "45233100",
+      "45247270",
+      "45252100",
+      "45252126",
+      "45252127"
+     ]
+    }
+   ]
+  },
+  {
+   "ocid": "ocds-h6vhtk-02eb1e",
+   "releases": [
+    {
+     "release_id": "076339-2026",
+     "date": "2026-08-11T15:18:31+01:00",
+     "tag": [
+      "award",
+      "contract"
+     ],
+     "buyer": "Fareham Borough Council",
+     "title": "Salterns and Monks Hill Timber Groyne Maintenance",
+     "value": null,
+     "deadline": null,
+     "locality": "Fareham",
+     "region": "UKJ",
+     "location": null,
+     "cpv": [
+      "45247100"
+     ]
+    }
+   ]
+  },
+  {
+   "ocid": "ocds-h6vhtk-06999b",
+   "releases": [
+    {
+     "release_id": "044736-2026",
+     "date": "2026-05-15T08:33:57+01:00",
+     "tag": [
+      "award",
+      "contract"
+     ],
+     "buyer": "East Sussex County Council",
+     "title": "Blue Heart Integrated Flood Warning-Eastbourne",
+     "value": null,
+     "deadline": null,
+     "locality": "Lewes",
+     "region": "UKJ2",
+     "location": null,
+     "cpv": [
+      "73220000",
+      "45243000",
+      "45246400"
+     ]
+    }
+   ]
+  },
+  {
+   "ocid": "ocds-h6vhtk-0609da",
+   "releases": [
+    {
+     "release_id": "004774-2026",
+     "date": "2026-01-20T12:20:39Z",
+     "tag": [
+      "award",
+      "contract"
+     ],
+     "buyer": "East Suffolk Council",
+     "title": "Consultancy Services for the Suffolk Coastal Strategic Review Project",
+     "value": null,
+     "deadline": null,
+     "locality": "Woodbridge",
+     "region": "UKH14",
+     "location": "Suffolk Coast",
+     "cpv": [
+      "71311300",
+      "45243000"
+     ]
+    }
+   ]
+  },
+  {
+   "ocid": "ocds-h6vhtk-060789",
+   "releases": [
+    {
+     "release_id": "003835-2026",
+     "date": "2026-01-16T11:55:49Z",
+     "tag": [
+      "award",
+      "contract"
+     ],
+     "buyer": "Portsmouth City Council",
+     "title": "Extension to Coastal Engineering Minor Works Framework Agreement: Southern Coastal Group and SCOPAC (Southern England)",
+     "value": null,
+     "deadline": null,
+     "locality": "Portsmouth",
+     "region": "UKJ21",
+     "location": "The framework is available to all SCG and SCOPAC members, including any future iterations of these groups which may include for changes in existing member status and / or addition of new members over the term of the framework agreement, However, no guarantees on usage and demand can be made. The current list of SCG & SCOPAC local authority and Harbour Authority members includes: • Bournemouth, Christchurch and Poole Council • Chichester District Council • Dorset Council • Eastleigh Borough Council • Fareham Borough Council • Gosport Borough Council • Hampshire County Council • Havant Borough Council • Isle of Wight Council • New Forest District Council • Portsmouth City Council • Southampton City Council • Chichester Harbour Conservancy • Langstone Harbour Board • Poole Harbour Commissioners • Yarmouth Harbour Commissioners",
+     "cpv": [
+      "45240000",
+      "45241000",
+      "45242110",
+      "45243000",
+      "45244000",
+      "45246000",
+      "45247000",
+      "45252124",
+      "45112320",
+      "45112360",
+      "45112400",
+      "45112500"
+     ]
+    }
+   ]
+  }
+ ]
+}

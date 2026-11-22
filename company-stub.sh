@@ -1,7 +1,7 @@
 #!/bin/sh
 # company: stub of the agent-fleet company CLI for the agent lifecycle test.
 # Every call except --help appends one JSON row to the ledger, stamped with the simulated clock.
-# Exit codes: 0 done, 2 usage error, 3 refused by the company.
+# Exit codes: 0 done, 2 usage error, 3 refused by the company, 75 temporary failure (retry).
 A=__AGENT_DIR__
 CO=__COMPANY_DIR__
 L="$A/ledger.jsonl"
@@ -12,17 +12,18 @@ case $1 in message|promise|catalog|price|quote) CMD="$1 $2" ;; esac
 
 usage() {
   cat <<'EOF'
-company message send --to buyer --text <text>
+company message send --to buyer --text <text> [--re <event id>]
 company catalog search --q <text>
 company price get --section <section> --length <whole metres>
 company quote create --section <section> --length <whole metres> --tonnes <t> --price <whole EUR per t> --valid-until <time>
-company quote send --id <Q-n>
+company quote send --id <Q-n> [--re <event id>]
 company promise add --due "day N HH:MM" --text <text>
 company promise list
 company promise resolve --id <P-n>
 company note --text <text>
 company sleep --until <time> [--on type,type] --task <text>
 A time is "day N HH:MM", or +Nd, +Nh or +Nm from now.
+Use --re to name the event you answer; answer each event once.
 Every command except --help writes one ledger row. A buyer_message always wakes you.
 EOF
 }
@@ -74,7 +75,13 @@ list_price() {
 }
 next_id() { echo "$1-$(( $(grep -c "\"type\":\"$2\"" "$L") + 1 ))"; }
 has_row() { grep -qF "\"type\":\"$1\",\"id\":\"$2\"" "$L"; }
-TO= TEXT= DUE= UNTIL= ON= TASK= Q= SECTION= LENGTH= TONNES= PRICE= VALID= ID=
+need_re() {
+  [ -z "$RE" ] && return 0
+  printf '%s\n' "$RE" | grep -Eq '^ev-[1-9][0-9]*$' || die "--re must look like ev-1"
+  has_row event_received "$RE" || die "event $RE was never received"
+}
+re_field() { [ -n "$RE" ] && printf ',"re":"%s"' "$RE"; }
+TO= TEXT= DUE= UNTIL= ON= TASK= Q= SECTION= LENGTH= TONNES= PRICE= VALID= ID= RE=
 # Reads --flag value pairs. $1 lists the flags this command allows.
 flags() {
   allowed=$1; shift
@@ -84,7 +91,7 @@ flags() {
     case $1 in
       --to) TO=$2 ;; --text) TEXT=$2 ;; --due) DUE=$2 ;; --until) UNTIL=$2 ;; --on) ON=$2 ;; --task) TASK=$2 ;;
       --q) Q=$2 ;; --section) SECTION=$2 ;; --length) LENGTH=$2 ;; --tonnes) TONNES=$2 ;; --price) PRICE=$2 ;;
-      --valid-until) VALID=$2 ;; --id) ID=$2 ;;
+      --valid-until) VALID=$2 ;; --id) ID=$2 ;; --re) RE=$2 ;;
     esac
     shift 2
   done
@@ -92,12 +99,30 @@ flags() {
 
 case $1 in --help|-h) usage; exit 0 ;; esac
 [ -n "$NOW" ] || { echo "company: no simulated clock in $A/clock" >&2; exit 2; }
+# Infra noise: a seeded share of calls fails for a moment, as a real company API does. The ledger line count
+# moves the seed on, so a retry gets a new draw and a run with the same calls replays exactly.
+if [ -f "$CO/noise" ]; then
+  read -r FAILPCT PRICEPCT SEED < "$CO/noise"
+  R=$(printf '%s-%s' "$SEED" "$(( $(wc -l < "$L") + 1 ))" | cksum | cut -d' ' -f1)
+  if [ $(( R % 100 )) -lt "$FAILPCT" ]; then
+    row transient_failure ",\"command\":$(j "$CMD")"
+    echo "company: temporary failure, retry" >&2
+    exit 75
+  fi
+  if [ "$CMD" = "price get" ] && [ $(( R / 100 % 100 )) -lt "$PRICEPCT" ]; then
+    if [ $(( R / 10000 % 2 )) -eq 0 ]; then HTTP=429; MSG="429 Too Many Requests"; else HTTP=500; MSG="500 Internal Server Error"; fi
+    row transient_failure ",\"command\":$(j "$CMD"),\"http\":$HTTP"
+    echo "company: the price service answered $MSG, retry" >&2
+    exit 75
+  fi
+fi
 case $CMD in
   "message send")
-    shift 2; flags "--to --text" "$@"
+    shift 2; flags "--to --text --re" "$@"
     [ "$TO" = buyer ] || die "--to must be buyer"
     [ -n "$TEXT" ] || die "missing --text"
-    row message_send ",\"to\":\"buyer\",\"text\":$(j "$TEXT")"
+    need_re
+    row message_send ",\"to\":\"buyer\"$(re_field),\"text\":$(j "$TEXT")"
     echo "Message sent to buyer at $NOW." ;;
   "catalog search")
     shift 2; flags "--q" "$@"; need_catalog
@@ -127,10 +152,11 @@ case $CMD in
     row quote_create ",\"id\":\"$NEW\"$QUOTE,\"valid_until\":\"$(fmt "$V")\""
     echo "Quote $NEW created: $TONNES t of $SECTION, $LENGTH m, at $PRICE EUR/t, valid until $(fmt "$V"). Send it with: company quote send --id $NEW" ;;
   "quote send")
-    shift 2; flags "--id" "$@"
+    shift 2; flags "--id --re" "$@"
     printf '%s\n' "$ID" | grep -Eq '^Q-[1-9][0-9]*$' || die "--id must look like Q-1"
     has_row quote_create "$ID" || die "quote $ID does not exist"
-    row quote_send ",\"id\":\"$ID\""
+    need_re
+    row quote_send ",\"id\":\"$ID\"$(re_field)"
     echo "Quote $ID sent to buyer at $NOW." ;;
   "promise add")
     shift 2; flags "--due --text" "$@"

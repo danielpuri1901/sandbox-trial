@@ -12,6 +12,7 @@
   "type": "module",
   "private": "true",
   "dependencies": {
+    "@basetenlabs/sandbox": "^0.5.0",
     "@daytona/sdk": "^2.1.0",
     "@fly/sprites": "^0.2.5",
     "@vercel/sandbox": "^4.1.0",

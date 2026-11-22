@@ -1,5 +1,5 @@
 // Sleep-and-wake trial: the same six timed steps against each sandbox provider.
-// Usage: node --env-file=.env trial.mjs <e2b|daytona|sprites|modal|vercel|all>
+// Usage: node --env-file=.env trial.mjs <e2b|daytona|sprites|baseten|modal|vercel|all>
 import { appendFileSync, readFileSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -102,6 +102,32 @@ const PROVIDERS = {
     },
     async wake() {}, // the wake step's first exec wakes the Sprite
     async destroy(c) { if (c.sprite) await c.sprite.delete(); },
+  },
+
+  baseten: {
+    pkg: '@basetenlabs/sandbox',
+    env: ['BASETEN_API_KEY'],
+    // No SDK sleep call: a sandbox goes on standby after a few seconds without requests (memory and
+    // processes kept) and the next request resumes it. Status stays DEPLOYED on standby, so standby
+    // itself is not observable; the 45 s wait matches the Sprites run.
+    primitive: 'idle standby (no SDK call; 45 s idle wait, standby not observable) -> next exec resumes it',
+    async create(c) {
+      const { SandboxClient } = await import('@basetenlabs/sandbox');
+      c.client = new SandboxClient({ apiKey: env('BASETEN_API_KEY') });
+      // Safety net: Baseten deletes the sandbox after 1 h even if this script dies before destroy.
+      c.sbx = await c.client.create({
+        lifecycle: { expirationPolicies: [{ type: 'TTL_MAX_AGE', afterMs: 3_600_000, action: 'DELETE' }] },
+      });
+    },
+    async run(c, script) {
+      const b64 = Buffer.from(script).toString('base64');
+      const r = await c.sbx.process.exec({ command: `echo ${b64} | base64 -d | sh`, waitForCompletion: true });
+      if (r.exitCode !== 0) throw new Error(`exit ${r.exitCode}: ${r.stderr}`);
+      return r.stdout;
+    },
+    async sleep() { await delay(45_000); },
+    async wake() {}, // the wake step's first exec resumes the sandbox
+    async destroy(c) { if (c.sbx) await c.client.delete({ name: c.sbx.name }); },
   },
 
   modal: {

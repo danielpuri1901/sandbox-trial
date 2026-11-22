@@ -28,7 +28,7 @@ import { NOISE, STREAM, arrivals, basic, brokenPromises, buyerDecides, doubleAct
 
 const MAX_TOOL_CALLS_PER_PERIOD = 100;
 const MAX_TOKENS_PER_PERIOD = 300_000;
-const MAX_TOKENS_PER_PROVIDER = 2_000_000; // safety stop for one provider's whole run, all its agents together
+const MAX_TOKENS_PER_PROVIDER = 6_000_000; // safety stop for one provider's whole run, all its agents together
 const MAX_BUYER_TOKENS = 100_000; // buyer model tokens for the whole run, with --buyer-text llm
 const MIN_PAUSE_MS = 45_000;
 const WAKE_ATTEMPTS = 4;

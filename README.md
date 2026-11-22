@@ -220,7 +220,7 @@ The provider summary counts the agents that passed each check.
 - 300,000 tokens in one awake period.
 - 6,000,000 tokens for one provider, shared by all its agents.
 - 6 awake periods in basic and 20 in heavy.
-- 100,000 buyer model tokens for the whole run, with `--buyer-text llm`.
+- 300,000 buyer model tokens for the whole run, with `--buyer-text llm`.
   After that the buyer falls back to the templates.
 
 ## Noise

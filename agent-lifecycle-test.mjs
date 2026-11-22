@@ -1,11 +1,14 @@
 // Agent lifecycle test: seller agents live through a scripted scenario on each sandbox provider.
 // A scaled-down copy of the agent-fleet actor loop: the brain (one fresh Pi session per awake period) runs on this
 // Mac, the hands (Pi's read, write, edit and bash tools) run in the sandbox, and the agent home lives on the sandbox disk.
-// Usage: node --env-file=.env agent-lifecycle-test.mjs <provider|all> [--scenario basic|heavy] [--agents N] [--fake-agent] [--model <id>]
-import { appendFileSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+// Usage: node --env-file=.env agent-lifecycle-test.mjs <provider|all> [--scenario basic|heavy] [--agents N] [--noise off|light|heavy]
+//   [--seed N] [--buyer-text template|llm] [--human-buyer] [--fake-agent] [--model <id>]
+import { execSync } from 'node:child_process';
+import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createHash, randomBytes } from 'node:crypto';
 import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { createInterface } from 'node:readline';
 import { parseArgs } from 'node:util';
 import { setTimeout as delay } from 'node:timers/promises';
 import {
@@ -20,17 +23,35 @@ import {
   SettingsManager,
 } from '@earendil-works/pi-coding-agent';
 import { PROVIDERS, oneLine, version, withTimeout } from './providers.mjs';
-import { basic, brokenPromises, buyerDecides, fmt, followedUp, heavy, toMin } from './scenarios.mjs';
+import { BUYER_MODEL, writeBuyerText } from './buyer-text.mjs';
+import { NOISE, STREAM, arrivals, basic, brokenPromises, buyerDecides, doubleActions, fmt, followedUp, heavy, rng, toMin } from './scenarios.mjs';
 
 const MAX_TOOL_CALLS_PER_PERIOD = 100;
 const MAX_TOKENS_PER_PERIOD = 300_000;
 const MAX_TOKENS_PER_PROVIDER = 2_000_000; // safety stop for one provider's whole run, all its agents together
+const MAX_BUYER_TOKENS = 100_000; // buyer model tokens for the whole run, with --buyer-text llm
 const MIN_PAUSE_MS = 45_000;
-const ALWAYS_WAKE = ['buyer_message'];
-const NEVER_WAKE = ['price_change'];
+const WAKE_ATTEMPTS = 4;
+const WAKE_BACKOFF_MS = 2000; // doubles after each failed wake attempt
+const ALWAYS_WAKE = ['buyer_message', 'delivery_late'];
+const NEVER_WAKE = ['price_change', 'stock_change'];
 const SCENARIOS = { basic, heavy };
 const PRICES = JSON.parse(readFileSync(new URL('./model-prices.json', import.meta.url)));
 const RESULTS = new URL('./lifecycle-results.jsonl', import.meta.url);
+const NOTICES = new URL('./notices.json', import.meta.url);
+const HOMES = new URL('./homes/', import.meta.url); // git-ignored home copies, one folder for each run
+// The commit that produced a result row, marked when the test code has uncommitted changes.
+const CODE = (() => {
+  try {
+    const cwd = new URL('.', import.meta.url);
+    const sha = execSync('git rev-parse --short HEAD', { cwd, stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+    const files = 'agent-lifecycle-test.mjs scenarios.mjs company-stub.sh providers.mjs buyer-text.mjs';
+    const dirty = execSync(`git status --porcelain -- ${files}`, { cwd, stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+    return dirty ? `${sha}+changes` : sha;
+  } catch {
+    return null;
+  }
+})();
 // The company CLI stub, installed in the sandbox as ~/bin/company.
 const COMPANY = readFileSync(new URL('./company-stub.sh', import.meta.url), 'utf8');
 
@@ -119,31 +140,38 @@ function sandboxTools(p, c) {
   return tools;
 }
 
-const installHome = (c, sc) => {
+// The agent home and the company's systems for one sandbox. With `withHome` false (recovery after a kill) only the
+// company side is installed, and the saved home is restored over it.
+const installSandbox = (c, sc, run, agent, { withHome = true, factor = 100 } = {}) => {
   const file = (path, text) => `printf %s ${b64(text)} | base64 -d > ${q(path)}`;
   const bin = `${c.home}/bin`;
+  const noise = NOISE[run.noise];
   const stub = COMPANY.replace('__AGENT_DIR__', () => q(c.agentDir)).replace('__COMPANY_DIR__', () => q(c.companyDir));
+  const company = sc.catalog !== null || run.noise !== 'off';
   return [
     'set -e',
     `mkdir -p ${q(c.agentDir)} ${q(bin)}`,
-    file(`${c.agentDir}/AGENTS.md`, sc.contract),
-    ...Object.entries(sc.files).map(([name, text]) => file(`${c.agentDir}/${name}`, text)),
-    `: > ${q(`${c.agentDir}/ledger.jsonl`)}`,
-    file(`${bin}/company`, stub),
-    `chmod +x ${q(`${bin}/company`)}`,
-    // The company's systems: the catalog and the price factor. They live outside the agent home.
-    ...(sc.catalog
+    ...(withHome
       ? [
-          `mkdir -p ${q(c.companyDir)}`,
-          file(`${c.companyDir}/catalog.tsv`, sc.catalog.map((s) => `${s.join('\t')}\n`).join('')),
-          `echo 100 > ${q(`${c.companyDir}/price-factor`)}`,
+          file(`${c.agentDir}/AGENTS.md`, sc.contract),
+          ...Object.entries(sc.files).map(([name, text]) => file(`${c.agentDir}/${name}`, text)),
+          `: > ${q(`${c.agentDir}/ledger.jsonl`)}`,
         ]
       : []),
+    file(`${bin}/company`, stub),
+    `chmod +x ${q(`${bin}/company`)}`,
+    // The company's systems: the catalog, the price factor and the noise settings. They live outside the agent home.
+    ...(company ? [`mkdir -p ${q(c.companyDir)}`] : []),
+    ...(sc.catalog
+      ? [file(`${c.companyDir}/catalog.tsv`, sc.catalog.map((s) => `${s.join('\t')}\n`).join('')), `echo ${factor} > ${q(`${c.companyDir}/price-factor`)}`]
+      : []),
+    ...(run.noise !== 'off' ? [`echo ${noise.toolFailPct} ${noise.priceFailPct} ${agent.seed} > ${q(`${c.companyDir}/noise`)}`] : []),
   ].join('\n');
 };
 // stderr is closed so a stray message cannot mix into the base64 output on providers that merge the streams.
 const LEDGER_DUMP = 'if [ -f "$A/ledger.jsonl" ]; then echo ledger=found; base64 < "$A/ledger.jsonl"; else echo ledger=missing; fi';
-const startScript = (c, now, factor) =>
+// The ledger is dumped before the event_received rows are added, so the hash compares the home as it slept.
+const startScript = (c, now, factor, eventRows) =>
   [
     'exec 2>/dev/null',
     `A=${q(c.agentDir)}`,
@@ -151,6 +179,7 @@ const startScript = (c, now, factor) =>
     `printf %s ${q(fmt(now))} > "$A/clock"`,
     ...(factor ? [`echo ${factor} > ${q(`${c.companyDir}/price-factor`)}`] : []),
     LEDGER_DUMP,
+    ...(eventRows.length ? [`printf %s ${b64(eventRows.map((r) => `${JSON.stringify(r)}\n`).join(''))} | base64 -d >> "$A/ledger.jsonl"`] : []),
   ].join('\n');
 const endScript = (c) =>
   [
@@ -169,6 +198,49 @@ function readLedger(out) {
   return Buffer.from(rest.slice(rest.indexOf('\n') + 1), 'base64').toString('utf8');
 }
 const sha256 = (text) => (text === null ? null : createHash('sha256').update(text).digest('hex'));
+
+// The home copy on this Mac: agent-fleet saves the home to S3 after every awake period; here a git-ignored folder.
+async function saveHome(p, c, file) {
+  const out = await sh(p, c, `cd ${q(c.home)} && tar czf - agent 2>/dev/null | base64 | tr -d '\\n'`);
+  writeFileSync(file, Buffer.from(out.trim(), 'base64'));
+}
+// Sent in pieces, because one sandbox command carries only about 70 KB.
+async function restoreHome(p, c, file) {
+  const data = readFileSync(file).toString('base64');
+  const tmp = q(`${c.home}/.home-restore.b64`);
+  await sh(p, c, `: > ${tmp}`);
+  for (let k = 0; k < data.length; k += 48_000) await sh(p, c, `printf %s ${data.slice(k, k + 48_000)} >> ${tmp}`);
+  await sh(p, c, `cd ${q(c.home)} && base64 -d < ${tmp} | tar xzf - && rm -f ${tmp}`);
+}
+
+// The first wake attempt sometimes fails on purpose (infra noise); real failures are retried the same way,
+// with backoff, like the agent-fleet sweeper. Returns the start time of the attempt that worked.
+async function wakeWithRetry(p, c, injectFailure, row) {
+  for (let attempt = 1; ; attempt++) {
+    const start = performance.now();
+    try {
+      if (attempt === 1 && injectFailure) throw new Error('injected wake failure');
+      await withTimeout(p.wake(c));
+      return start;
+    } catch (e) {
+      row.faults.push(attempt === 1 && injectFailure ? 'wake_fail_injected' : `wake_error: ${oneLine(e).slice(0, 120)}`);
+      if (attempt >= WAKE_ATTEMPTS) throw e;
+      row.wake_retries++;
+      await delay(WAKE_BACKOFF_MS * 2 ** (attempt - 1));
+    }
+  }
+}
+
+// --human-buyer: one line from the terminal (or piped stdin). End of input counts as an empty line.
+let stdinLines;
+async function askHuman(question) {
+  process.stdout.write(question);
+  stdinLines ??= createInterface({ input: process.stdin })[Symbol.asyncIterator]();
+  const { value, done } = await stdinLines.next();
+  const answer = done ? '' : value.trim();
+  if (!process.stdin.isTTY) process.stdout.write(`${answer}\n`);
+  return answer;
+}
 
 // The agent-fleet firstPrompt shape: the state, the pending events, then the instruction to decide and sleep.
 function firstPrompt(c, now, events, wake) {
@@ -291,29 +363,76 @@ async function piPeriod(c, sc, prompt, { model, apiKey }, pool, key) {
 
 // --fake-agent: the scenario's fixed company calls, sent through the same bash tool that Pi uses.
 // A failed call is counted in tool_errors and the next call still runs, as a Pi agent would go on.
+// A temporary failure (exit 75) is retried up to 5 times.
 async function fakePeriod(c, commands, n) {
   for (const [i, command] of commands.entries()) {
-    await c.tools.bash.execute(`fake-${n}-${i}`, { command }, undefined, undefined, undefined).catch(() => {});
+    for (let attempt = 1; attempt <= 5; attempt++) {
+      const ok = await c.tools.bash.execute(`fake-${n}-${i}-${attempt}`, { command }, undefined, undefined, undefined).then(
+        () => true,
+        (e) => !/code 75\b/.test(e.message),
+      );
+      if (ok) break;
+    }
   }
   return { error: null, failed: false };
+}
+
+// People noise: the buyer model writes the message text when the event is delivered.
+async function buyerTextFor(e, agent, ledgerRows, opts, buyer, row) {
+  if (opts.buyerText !== 'llm' || e.type !== 'buyer_message' || e.written || !e.trait) return;
+  e.written = true;
+  const template = e.payload?.text ?? '';
+  if (buyer.pool.tokens >= MAX_BUYER_TOKENS) {
+    row.faults.push(`buyer_text_cap:${e.id}`);
+    return;
+  }
+  const lastAgentMessage = ledgerRows.filter((r) => r.type === 'message_send').at(-1)?.text;
+  try {
+    const { text, usage } = await writeBuyerText({ apiKey: opts.apiKey, persona: agent.persona, template, trait: e.trait, lastAgentMessage });
+    const p = PRICES[BUYER_MODEL];
+    const tokens = (usage.input_tokens ?? 0) + (usage.output_tokens ?? 0) + (usage.cache_read_input_tokens ?? 0) + (usage.cache_creation_input_tokens ?? 0);
+    const costUsd =
+      ((usage.input_tokens ?? 0) * p.inputPerMTok + (usage.output_tokens ?? 0) * p.outputPerMTok +
+        (usage.cache_read_input_tokens ?? 0) * p.cacheReadPerMTok + (usage.cache_creation_input_tokens ?? 0) * p.cacheWritePerMTok) / 1e6;
+    buyer.pool.tokens += tokens;
+    buyer.tokens += tokens;
+    buyer.cost += costUsd;
+    e.payload = { text };
+    row.faults.push(`buyer_style:${e.id}:${e.trait}`);
+    (row.buyer_messages ??= []).push({ id: e.id, trait: e.trait, text });
+  } catch (err) {
+    row.faults.push(`buyer_model_error:${e.id}: ${oneLine(err).slice(0, 100)}`);
+  }
 }
 
 // One agent in its own sandbox, from its first event to the end of the scenario.
 async function runAgent(name, p, sc, agent, opts, pool, base) {
   const tag = `${name}/${agent.id}`;
   const t0 = performance.now();
-  const c = {};
+  const noise = NOISE[opts.noise];
+  const nr = rng(agent.seed ^ STREAM.infra);
+  let c = {};
   const rows = [];
-  const inbox = agent.events.map((e) => ({ ...e, t: toMin(e.at) }));
-  const delivered = []; // event ids, once for each awake period that handled them
+  const inbox = arrivals(agent.events, noise, nr);
+  const killAfter = noise.kill ? 2 + Math.floor(nr() * 3) : null; // one sandbox kill after this period
+  const eventRows = sc.catalog !== null || opts.noise !== 'off'; // event_received rows in the ledger
+  const reached = new Map(); // event id -> deliveries, duplicates included
+  const handled = new Set(); // marked handled once, after an awake period that did not fail
   const ledgerRows = new Map(); // every ledger line seen at any period end, so a later disk loss cannot hide it
   const ledger = () => [...ledgerRows.values()].filter(Boolean);
   const priceChanges = []; // [time, factor] when a price change reached the sandbox
   const factorAt = (t) => priceChanges.filter(([at]) => at <= t).at(-1)?.[1] ?? 100;
+  const homeFile = new URL(`${opts.runId}/${name}-${agent.id}.tgz`, HOMES);
   const fakeState = {};
+  const buyer = { pool: opts.buyerPool, tokens: 0, cost: 0 };
   const rtts = [];
+  let shown = 0; // agent messages already shown to a human buyer
   let outcome = null;
-  let wake = { t: inbox[0].t, reason: inbox[0].id }; // no agent yet: its first event wakes it
+  let cancelSeenAt = null;
+  let killed = false;
+  let recovered = null;
+  const first = inbox.reduce((a, b) => (b.t < a.t ? b : a));
+  let wake = { t: first.t, reason: first.ev.id }; // no agent yet: its first event wakes it
   let now = wake.t;
   let prevHash;
   let tokens = 0;
@@ -330,18 +449,22 @@ async function runAgent(name, p, sc, agent, opts, pool, base) {
       }
       now = wake.t;
       // Every pending event up to now is delivered, also the types that could not wake the agent.
-      const due = inbox.filter((e) => e.t <= now).sort((a, b) => a.t - b.t);
-      for (const e of due) inbox.splice(inbox.indexOf(e), 1);
+      const items = inbox.filter((x) => x.t <= now).sort((a, b) => a.t - b.t);
+      for (const x of items) inbox.splice(inbox.indexOf(x), 1);
+      const due = items.map((x) => x.ev);
       row = {
         ...base,
         agent: agent.id,
-        seed: agent.seed,
         period: n,
         sim_time: fmt(now),
         wake_reason: wake.reason,
         events: due.map((e) => e.id),
+        faults: [],
         wake_ms: null,
+        wake_retries: 0,
+        recovery_ms: null,
         period_ms: null,
+        save_ms: null,
         sleep_ms: null,
         tool_calls: 0,
         tool_errors: 0,
@@ -361,35 +484,71 @@ async function runAgent(name, p, sc, agent, opts, pool, base) {
         error: null,
       };
       rows.push(row);
+      for (const x of items) {
+        reached.set(x.ev.id, (reached.get(x.ev.id) ?? 0) + 1);
+        if (x.dup) row.faults.push(`duplicate:${x.ev.id}`);
+        if (x.late) row.faults.push(`late:${x.ev.id}:+${x.late}m`);
+        if (['stock', 'undercut', 'notice_duplicate', 'notice_update', 'cancel', 'late_delivery'].includes(x.ev.kind) && !x.dup) {
+          row.faults.push(`world:${x.ev.kind}:${x.ev.id}`);
+        }
+      }
 
-      // Wake: from the wake primitive (create in period 1) until the first command returns.
-      const w0 = performance.now();
-      if (n === 1) {
+      // Wake: from the wake primitive (create in period 1, or after a kill) until the first command returns.
+      const injectWakeFailure = nr() < noise.wakeFail;
+      let w0 = performance.now();
+      if (n === 1 || killed) {
         await withTimeout((creating = p.create(c)));
       } else {
-        await withTimeout(p.wake(c));
+        w0 = await wakeWithRetry(p, c, injectWakeFailure, row);
       }
       await withTimeout(p.run(c, 'true'));
       row.wake_ms = ms(w0);
 
       const p0 = performance.now();
-      if (n === 1) {
+      if (n === 1 || killed) {
         c.home = (await withTimeout(p.run(c, 'echo "${HOME:-$PWD}"'))).trim();
         c.agentDir = `${c.home}/agent`;
         c.companyDir = `${c.home}/company`;
         c.tools = sandboxTools(p, c);
-        await sh(p, c, installHome(c, sc));
+        await sh(p, c, installSandbox(c, sc, opts, agent, { withHome: n === 1, factor: factorAt(now) }));
+        if (killed) await restoreHome(p, c, homeFile);
       }
       // The company publishes a price change when the event reaches the agent.
       const factor = due.find((e) => e.type === 'price_change')?.meta.factor;
       if (factor) priceChanges.push([now, factor]);
-      // The buyer decides from the ledger rows when the decision event is delivered.
-      for (const e of due.filter((x) => x.kind === 'decision')) {
-        outcome = buyerDecides(agent.persona, agent.followUp, ledger(), factorAt);
-        e.payload = { text: outcome.text };
+      for (const e of due) {
+        if (e.kind === 'cancel') cancelSeenAt ??= now;
+        // The buyer decides from the ledger rows when the decision event is first delivered.
+        if (e.kind === 'decision' && !outcome) {
+          outcome = buyerDecides(agent.persona, agent.followUp, ledger(), factorAt);
+          e.payload = { text: outcome.text };
+          // World noise: after an order, the mill reports a late delivery the next morning.
+          if (outcome.decision === 'order' && noise.world >= 2) {
+            const late = {
+              id: `ev-${agent.events.length + 1}`,
+              kind: 'late_delivery',
+              type: 'delivery_late',
+              at: fmt(Math.floor(now / 1440) * 1440 + 1440 + 540),
+              payload: { text: `The mill reports that rolling for quote ${outcome.quote} slips by 5 days.` },
+            };
+            agent.events.push(late);
+            inbox.push({ ev: late, t: toMin(late.at), late: 0, dup: false });
+          }
+        }
+        await buyerTextFor(e, agent, ledger(), opts, buyer, row);
       }
-      const hash = sha256(readLedger(await sh(p, c, startScript(c, now, factor))));
+      const received = eventRows ? due.map((e) => ({ at: fmt(now), type: 'event_received', id: e.id, event_type: e.type })) : [];
+      const start = await sh(p, c, startScript(c, now, factor, received));
+      const restored = readLedger(start);
+      const hash = sha256(restored);
       if (n > 1) row.home_intact = hash !== null && hash === prevHash;
+      if (killed) {
+        const kept = new Set((restored ?? '').split('\n').filter(Boolean));
+        recovered = { period: n, recovery_ms: ms(w0), rows_lost: [...ledgerRows.keys()].filter((l) => !kept.has(l)).length, home_intact: row.home_intact };
+        row.recovery_ms = recovered.recovery_ms;
+        row.faults.push(`recovered:${recovered.rows_lost} rows lost`);
+        killed = false;
+      }
 
       c.period = { calls: 0, errors: 0, errorSample: null, rtt: [], cap: null, stop() {} };
       const result = opts.fake
@@ -398,20 +557,24 @@ async function runAgent(name, p, sc, agent, opts, pool, base) {
       const { failed, ...fields } = result;
       Object.assign(row, fields);
       // A failed period keeps its events for the next one, as in agent-fleet.
-      if (failed) inbox.push(...due);
-      else delivered.push(...row.events);
+      if (failed) inbox.push(...items.map((x) => ({ ...x, t: now })));
+      else for (const e of due) handled.add(e.id);
 
       const out = await sh(p, c, endScript(c));
       const text = readLedger(out);
       prevHash = sha256(text);
+      const fresh = [];
       for (const line of (text ?? '').split('\n').filter(Boolean)) {
         if (ledgerRows.has(line)) continue;
+        let parsed = null;
         try {
-          ledgerRows.set(line, JSON.parse(line));
-        } catch {
-          ledgerRows.set(line, null);
-        }
+          parsed = JSON.parse(line);
+        } catch {}
+        ledgerRows.set(line, parsed);
+        if (parsed) fresh.push(parsed);
       }
+      const transient = fresh.filter((r) => r.type === 'transient_failure');
+      if (transient.length) row.faults.push(`transient:${transient.length}`, ...transient.filter((r) => r.http).map((r) => `http_${r.http}`));
       row.home_bytes = Number(/^bytes=(\d+)$/m.exec(out)?.[1] ?? NaN) || null;
       const sleepB64 = /^sleep=(.*)$/m.exec(out)?.[1] ?? '';
       let sleep = null;
@@ -437,20 +600,41 @@ async function runAgent(name, p, sc, agent, opts, pool, base) {
       pool.live.delete(tag);
       pool.done += row.tokens_total;
       row.period_ms = ms(p0);
+      if (opts.noise !== 'off') {
+        const s0 = performance.now();
+        await saveHome(p, c, homeFile);
+        row.save_ms = ms(s0);
+      }
       console.log(
         `${tag} period ${n} ${row.sim_time} woke on ${row.wake_reason}: ${row.tool_calls} tool calls` +
           `${row.tool_errors ? ` (${row.tool_errors} failed)` : ''}, ${sleep ? `sleeps until ${sleep.until}` : 'ORPHAN'}` +
+          `${row.faults.length ? ` [${row.faults.join(', ').slice(0, 160)}]` : ''}` +
           `${row.error ? `, error: ${row.error.slice(0, 120)}` : ''}`,
       );
+
+      // --human-buyer: show what the agent wrote and take the buyer's reply from the terminal.
+      if (opts.human) {
+        const sent = ledger().filter((r) => r.type === 'message_send');
+        for (const m of sent.slice(shown)) console.log(`\nAgent to buyer (${m.at}): ${m.text}`);
+        if (sent.length > shown) {
+          shown = sent.length;
+          const reply = await askHuman('Buyer reply (empty line = silence): ');
+          if (reply) {
+            const e = { id: `ev-${agent.events.length + 1}`, kind: 'human', type: 'buyer_message', at: fmt(now + 60), payload: { text: reply } };
+            agent.events.push(e);
+            inbox.push({ ev: e, t: now + 60, late: 0, dup: false });
+          }
+        }
+      }
 
       // Next wake: the alarm, or the first pending event the agent listens for, whichever comes first.
       // Orphan rule: no sleep.json means a wake on the next simulated day.
       const alarm = sleep ? sleep.until_min : now + 1440;
       const on = [...ALWAYS_WAKE, ...(Array.isArray(sleep?.on) ? sleep.on : [])].filter((t) => !NEVER_WAKE.includes(t));
-      const next = inbox.filter((e) => on.includes(e.type)).sort((a, b) => a.t - b.t)[0];
+      const next = inbox.filter((x) => on.includes(x.ev.type)).sort((a, b) => a.t - b.t)[0];
       wake =
         next && next.t <= alarm
-          ? { t: Math.max(next.t, now), reason: next.id }
+          ? { t: Math.max(next.t, now), reason: next.ev.id }
           : { t: alarm, reason: 'alarm', task: sleep ? sleep.task : 'Default wake: no next step was set' };
 
       if (Math.floor(now / 1440) >= sc.lastDay || wake.t >= sc.endMin) break;
@@ -466,7 +650,16 @@ async function runAgent(name, p, sc, agent, opts, pool, base) {
       // so the idle time between periods is the same on every provider.
       const pauseEnd = Date.now() + Math.max(MIN_PAUSE_MS, (wake.t - now) * sc.realMsPerSimMinute);
       const s0 = performance.now();
-      await withTimeout(p.sleep(c));
+      if (n === killAfter) {
+        // Infra noise: the sandbox dies between two periods. The next period recovers from the home copy.
+        await withTimeout(p.destroy(c));
+        row.faults.push('sandbox_killed');
+        c = {};
+        creating = undefined;
+        killed = true;
+      } else {
+        await withTimeout(p.sleep(c));
+      }
       row.sleep_ms = ms(s0);
       await delay(Math.max(0, pauseEnd - Date.now()));
     }
@@ -484,29 +677,51 @@ async function runAgent(name, p, sc, agent, opts, pool, base) {
   const L = ledger();
   const checks = rows.map((r) => r.home_intact).filter((x) => x !== null);
   const isHeavy = sc.catalog !== null;
+  let humanDecision = null;
+  if (opts.human) {
+    const answer = (await askHuman('Decision, order or loss: ')).toLowerCase();
+    humanDecision = answer === 'order' ? 'order' : 'loss';
+    outcome = { ...buyerDecides(agent.persona, null, L, factorAt, now), decided_by: 'rule (for comparison)' };
+  }
+  const faultCounts = {};
+  for (const f of rows.flatMap((r) => r.faults)) {
+    const kind = f.split(':')[0];
+    faultCounts[kind] = (faultCounts[kind] ?? 0) + 1;
+  }
   const summary = {
     ...base,
     summary: 'agent',
     agent: agent.id,
     seed: agent.seed,
     periods: rows.length,
-    promise_kept: followedUp(L, agent.followUp),
+    promise_kept: agent.followUp ? followedUp(L, agent.followUp) : null,
     promises_kept: isHeavy ? brokenPromises(L, now).length === 0 : null,
-    order_won: isHeavy ? outcome?.decision === 'order' : null,
+    order_won: humanDecision ? humanDecision === 'order' : isHeavy ? outcome?.decision === 'order' : null,
+    project_cancelled: Boolean(agent.persona?.cancelAt),
     quotes_rejected: isHeavy ? L.filter((r) => r.type === 'quote_rejected').length : null,
     orphans: rows.filter((r) => r.orphan === true).length,
-    events_once: agent.events.every((e) => delivered.filter((id) => id === e.id).length === 1),
+    events_once: agent.events.every((e) => (reached.get(e.id) ?? 0) >= 1 && handled.has(e.id)),
+    no_double_action: isHeavy ? doubleActions(L).length === 0 : null,
+    double_actions: isHeavy ? doubleActions(L) : null,
+    no_message_after_cancel:
+      cancelSeenAt === null ? null : !L.some((r) => r.type === 'message_send' && toMin(r.at) > cancelSeenAt),
     home_intact_all: checks.length ? checks.every(Boolean) : null,
-    decision: outcome,
+    recovered_after_kill: recovered,
+    human_decision: humanDecision,
+    decision: outcome ?? (agent.persona?.cancelAt ? { decision: 'cancelled', reasons: ['the buyer cancelled the project'] } : null),
     persona: agent.persona,
     fake_role: opts.fake ? (agent.fakeRole ?? null) : null,
+    faults_fired: faultCounts,
     wake_ms: rows.map((r) => r.wake_ms),
+    wake_retries: sum(rows.map((r) => r.wake_retries)),
     tool_calls: sum(rows.map((r) => r.tool_calls)),
     tool_errors: sum(rows.map((r) => r.tool_errors)),
     tool_rtt_median_ms: median(rtts),
     home_bytes: rows.at(-1)?.home_bytes ?? null,
     tokens_total: tokens,
     cost_usd: cost,
+    buyer_tokens: buyer.tokens,
+    buyer_cost_usd: buyer.cost,
     wall_ms: ms(t0),
     stopped,
     error: errors.join('; ') || null,
@@ -525,33 +740,52 @@ async function lifecycle(name, sc, opts) {
     provider: name,
     sdk: `${p.pkg}@${version(p.pkg)}`,
     scenario: sc.name,
+    noise: opts.noise,
+    run_seed: opts.seed,
+    buyer: opts.human ? 'human' : opts.buyerText === 'llm' ? `model ${BUYER_MODEL}` : 'template',
     mode: opts.fake ? 'fake' : 'pi',
     model: opts.model,
+    code: CODE,
   };
   if (!opts.fake) base.pi = `@earendil-works/pi-coding-agent@${version('@earendil-works/pi-coding-agent')}`;
-  console.log(`run ${name} (${base.sdk}, scenario ${sc.name}, ${opts.agents} agents, mode ${base.mode}, model ${opts.model})`);
+  console.log(
+    `run ${name} (${base.sdk}, scenario ${sc.name}, ${opts.agents} agents, noise ${opts.noise}, seed ${opts.seed}, buyer ${base.buyer}, mode ${base.mode}, model ${opts.model})`,
+  );
   const t0 = performance.now();
   const pool = { done: 0, live: new Map() };
-  const agents = Array.from({ length: opts.agents }, (_, k) => sc.agent(k + 1));
+  const run = { seed: opts.seed, noise: opts.noise, notices: opts.notices, agents: opts.agents, human: opts.human, buyerText: opts.buyerText };
+  const agents = Array.from({ length: opts.agents }, (_, k) => sc.agent(k + 1, run));
   const results = await Promise.all(agents.map((a) => runAgent(name, p, sc, a, opts, pool, base)));
   const count = (key) => (results.every((r) => r[key] === null) ? null : results.filter((r) => r[key] === true).length);
+  const applies = (key) => results.filter((r) => r[key] !== null).length;
+  const faults = {};
+  for (const r of results) for (const [k, v] of Object.entries(r.faults_fired)) faults[k] = (faults[k] ?? 0) + v;
   const summary = {
     ...base,
     summary: 'provider',
     agents: results.length,
     agents_ok: results.filter((r) => !r.error && !r.stopped).length,
     orders_won: count('order_won'),
+    projects_cancelled: results.filter((r) => r.project_cancelled).length,
     promise_kept: count('promise_kept'),
     promises_kept: count('promises_kept'),
     events_once: count('events_once'),
+    no_double_action: count('no_double_action'),
+    no_message_after_cancel: count('no_message_after_cancel'),
+    no_message_after_cancel_applies: applies('no_message_after_cancel'),
     home_intact_all: count('home_intact_all'),
+    recovered_after_kill: results.filter((r) => r.recovered_after_kill && r.recovered_after_kill.rows_lost === 0 && r.recovered_after_kill.home_intact).length,
+    kills: results.filter((r) => r.recovered_after_kill).length,
     orphans: sum(results.map((r) => r.orphans)),
     quotes_rejected: results.every((r) => r.quotes_rejected === null) ? null : sum(results.map((r) => r.quotes_rejected ?? 0)),
+    faults_fired: faults,
     periods: sum(results.map((r) => r.periods)),
     wake_ms_median: median(results.flatMap((r) => r.wake_ms.filter((x) => x !== null))),
     tool_rtt_median_ms: median(results.map((r) => r.tool_rtt_median_ms).filter((x) => x !== null)),
     tokens_total: pool.done,
     cost_usd: sum(results.map((r) => r.cost_usd)),
+    buyer_tokens: sum(results.map((r) => r.buyer_tokens)),
+    buyer_cost_usd: sum(results.map((r) => r.buyer_cost_usd)),
     wall_ms: ms(t0),
     errors: results.filter((r) => r.error || r.stopped).map((r) => `${r.agent}: ${r.error ?? r.stopped}`),
   };
@@ -577,59 +811,76 @@ function parseKey(secret) {
 // A stray rejection from one SDK must not end the other providers' runs.
 process.on('unhandledRejection', (e) => console.error(`unhandled rejection: ${oneLine(e)}`));
 
-const usage = `usage: node --env-file=.env agent-lifecycle-test.mjs <${Object.keys(PROVIDERS).join('|')}|all> [--scenario ${Object.keys(SCENARIOS).join('|')}] [--agents N] [--fake-agent] [--model <${Object.keys(PRICES).join('|')}>]`;
+const usage = `usage: node --env-file=.env agent-lifecycle-test.mjs <${Object.keys(PROVIDERS).join('|')}|all> [--scenario basic|heavy] [--agents N] [--noise off|light|heavy] [--seed N] [--buyer-text template|llm] [--human-buyer] [--fake-agent] [--model <${Object.keys(PRICES).join('|')}>]`;
 let args;
 try {
   args = parseArgs({
     allowPositionals: true,
     options: {
       'fake-agent': { type: 'boolean', default: false },
+      'human-buyer': { type: 'boolean', default: false },
       model: { type: 'string', default: 'claude-haiku-5-5' },
       scenario: { type: 'string', default: 'basic' },
       agents: { type: 'string' },
+      noise: { type: 'string', default: 'off' },
+      seed: { type: 'string', default: '1' },
+      'buyer-text': { type: 'string', default: 'template' },
     },
   });
 } catch (e) {
   console.error(`${oneLine(e)}\n${usage}`);
   process.exit(2);
 }
+const fail = (message) => {
+  console.error(`${message}\n${usage}`);
+  process.exit(2);
+};
 const [arg, ...extra] = args.positionals;
 const names = arg === 'all' ? Object.keys(PROVIDERS) : [arg];
-if (extra.length || !names.every((n) => Object.hasOwn(PROVIDERS, n))) {
-  console.error(usage);
-  process.exit(2);
+if (extra.length || !names.every((n) => Object.hasOwn(PROVIDERS, n))) fail('name one provider or all');
+const v = args.values;
+if (!Object.hasOwn(SCENARIOS, v.scenario)) fail(`unknown scenario "${v.scenario}"`);
+const sc = SCENARIOS[v.scenario];
+if (!Object.hasOwn(NOISE, v.noise)) fail(`--noise must be ${Object.keys(NOISE).join(', ')}`);
+if (!['template', 'llm'].includes(v['buyer-text'])) fail('--buyer-text must be template or llm');
+const seed = Number(v.seed);
+if (!Number.isInteger(seed) || seed < 0 || seed > 1_000_000) fail('--seed must be a whole number from 0 to 1000000');
+let agentCount = v.agents === undefined ? sc.defaultAgents : Number(v.agents);
+if (!Number.isInteger(agentCount) || agentCount < 1 || agentCount > 50) fail('--agents must be a whole number from 1 to 50');
+if (v['human-buyer']) {
+  if (arg === 'all' || sc !== heavy) fail('--human-buyer needs one provider and --scenario heavy');
+  agentCount = 1;
 }
-const sc = SCENARIOS[args.values.scenario];
-if (!Object.hasOwn(SCENARIOS, args.values.scenario)) {
-  console.error(`unknown scenario "${args.values.scenario}": use ${Object.keys(SCENARIOS).join(' or ')}`);
-  process.exit(2);
-}
-const agentCount = args.values.agents === undefined ? sc.defaultAgents : Number(args.values.agents);
-if (!Number.isInteger(agentCount) || agentCount < 1 || agentCount > 50) {
-  console.error('--agents must be a whole number from 1 to 50');
-  process.exit(2);
-}
-const model = args.values.model;
-if (!Object.hasOwn(PRICES, model)) {
-  console.error(`unknown model "${model}": model-prices.json has ${Object.keys(PRICES).join(', ')}`);
-  process.exit(2);
-}
-const opts = { fake: args.values['fake-agent'], model, agents: agentCount };
-if (!opts.fake) {
+if (!Object.hasOwn(PRICES, v.model)) fail(`unknown model "${v.model}": model-prices.json has ${Object.keys(PRICES).join(', ')}`);
+const opts = {
+  fake: v['fake-agent'],
+  human: v['human-buyer'],
+  model: v.model,
+  agents: agentCount,
+  noise: v.noise,
+  seed,
+  buyerText: v['buyer-text'],
+  buyerPool: { tokens: 0 },
+  notices: existsSync(NOTICES) ? JSON.parse(readFileSync(NOTICES, 'utf8')).notices : [],
+  runId: `${new Date().toISOString().replace(/[:.]/g, '-')}-seed${seed}`,
+};
+// The model key: for the Pi agent, and for the buyer model with --buyer-text llm.
+if (!opts.fake || opts.buyerText === 'llm') {
   const secret = process.env.ANTHROPIC_SECRET;
   delete process.env.ANTHROPIC_SECRET; // the key lives only in opts from here on, never in the environment
   if (!secret?.trim()) {
-    console.log('skip all providers: missing env ANTHROPIC_SECRET (the model key). Set it, or pass --fake-agent.');
+    console.log('skip all providers: missing env ANTHROPIC_SECRET (the model key). Set it, or pass --fake-agent without --buyer-text llm.');
     process.exit(0);
   }
   opts.apiKey = parseKey(secret);
 }
+if (opts.noise !== 'off') mkdirSync(new URL(`${opts.runId}/`, HOMES), { recursive: true });
 
 const summaries = (
   await Promise.all(names.map((n) => lifecycle(n, sc, opts).catch((e) => console.error(`${n} failed before its run: ${oneLine(e)}`))))
 ).filter(Boolean);
 if (summaries.length) {
-  const of = (k, s) => (k === null ? '-' : `${k}/${s.agents}`);
+  const of = (k, s, n = s.agents) => (k === null ? '-' : `${k}/${n}`);
   console.table(
     Object.fromEntries(
       summaries.map((s) => [
@@ -640,7 +891,10 @@ if (summaries.length) {
           promise_kept: of(s.promise_kept, s),
           promises_kept: of(s.promises_kept, s),
           events_once: of(s.events_once, s),
+          no_double: of(s.no_double_action, s),
+          cancel_ok: s.no_message_after_cancel_applies ? of(s.no_message_after_cancel, s, s.no_message_after_cancel_applies) : '-',
           home_intact: of(s.home_intact_all, s),
+          recovered: s.kills ? `${s.recovered_after_kill}/${s.kills}` : '-',
           orphans: s.orphans,
           rejected: s.quotes_rejected ?? '-',
           periods: s.periods,
@@ -649,10 +903,13 @@ if (summaries.length) {
           tokens: s.tokens_total,
           'cost usd': Number(s.cost_usd.toFixed(4)),
           'wall s': Math.round(s.wall_ms / 1000),
-          errors: s.errors.join('; ').slice(0, 60),
+          errors: s.errors.join('; ').slice(0, 50),
         },
       ]),
     ),
   );
+  if (opts.buyerText === 'llm') {
+    console.log(`buyer model: ${sum(summaries.map((s) => s.buyer_tokens))} tokens, ${sum(summaries.map((s) => s.buyer_cost_usd)).toFixed(4)} USD`);
+  }
   if (summaries.some((s) => s.errors.length)) process.exitCode = 1;
 }

@@ -13,6 +13,7 @@ const EXTRA_STYLES = {
 
 export async function writeBuyerText({ apiKey, persona, template, trait, lastAgentMessage }) {
   const facts = [
+    `Your first name: ${persona.contact}.`,
     persona.account && `Your organisation: ${persona.account}.`,
     `Your project: ${persona.title} in ${persona.place}.`,
     `Wall bending moment ${persona.moment} kNm/m, pile length ${persona.length} m, about ${persona.tonnes} t, delivery within ${persona.weeks} weeks of the order.`,
@@ -26,7 +27,7 @@ export async function writeBuyerText({ apiKey, persona, template, trait, lastAge
       output_config: { effort: 'low' },
       system:
         'You write one email from a buyer at a construction company to a steel sheet pile seller. ' +
-        'Write only the email body, under 120 words, in plain text. ' +
+        'Write only the email body, under 120 words, in plain text, and sign with your first name. Never write placeholders in brackets. ' +
         'Keep every number, date, price and id from the required content exactly as given, and add no other prices. ' +
         'You do not know the seller\'s lowest price and you never state your own budget.',
       messages: [

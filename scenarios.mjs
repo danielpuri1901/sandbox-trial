@@ -188,7 +188,7 @@ const REGIONS = {
   UKH: 'the East of England', UKI: 'London', UKJ: 'South East England', UKK: 'South West England', UKL: 'Wales', UKM: 'Scotland',
   UKN: 'Northern Ireland',
 };
-const place = (n) => n?.location ?? n?.locality ?? REGIONS[n?.region?.slice(0, 3)] ?? 'the UK';
+const place = (n) => n?.locality ?? REGIONS[n?.region?.slice(0, 3)] ?? 'the UK';
 const money = (v) => (v?.amount ? `${v.currency === 'GBP' ? 'GBP ' : `${v.currency} `}${Math.round(v.amount).toLocaleString('en-GB')}` : 'not stated');
 
 // One agent's account, hidden need and event schedule. `run` holds the seed, noise level, notices and options.
@@ -220,6 +220,7 @@ function heavyAgent(i, run) {
   const decideDay = int(10, 12);
   const competitorAt = (quietDay + int(1, 2)) * DAY + int(9, 16) * 60;
   const persona = {
+    contact: ['Tom', 'Priya', 'Owen', 'Hannah', 'Ravi', 'Kate', 'Liam', 'Sara'][seed % 8], // the buyer's first name
     account, title, place: place(first), ocid: notice?.ocid ?? null, deadline: first?.deadline?.slice(0, 10) ?? null,
     moment, length, tonnes, weeks, need, section, list0, budget, competitor, rise,
     followAt: quietDay * DAY + 600, decideAt: decideDay * DAY + 900,

@@ -133,15 +133,17 @@ const PROVIDERS = {
   modal: {
     pkg: 'modal',
     env: ['MODAL_TOKEN_ID', 'MODAL_TOKEN_SECRET'],
-    // Only persistent sandboxes (experimental in this SDK) pause and resume in place; the others need a new sandbox.
-    primitive: 'experimentalPause() on an experimentalPersistent sandbox -> experimentalResume()',
+    // In-place pause needs persistent sandboxes, which this workspace is refused ("Persistent Sandboxes are
+    // not available for this workspace yet"). So: memory + filesystem snapshot, terminate, restore into a
+    // new sandbox. The snapshot itself has no delete call in this SDK; Modal keeps memory snapshots 7 days.
+    primitive: 'experimentalSnapshot() (memory + filesystem) + terminate() -> sandboxes.experimentalFromSnapshot()',
     async create(c) {
       const { ModalClient } = await import('modal');
       c.modal = new ModalClient();
       const app = await c.modal.apps.fromName('sandbox-trial', { createIfMissing: true });
       // Modal has no default image; Debian slim is close to the Debian/Ubuntu images the other providers boot.
       const image = c.modal.images.fromRegistry('debian:bookworm-slim');
-      c.sb = await c.modal.sandboxes.create(app, image, { experimentalPersistent: true });
+      c.sb = await c.modal.sandboxes.create(app, image, { experimentalEnableSnapshot: true });
     },
     async run(c, script) {
       const p = await c.sb.exec(['sh', '-c', script]);
@@ -149,8 +151,11 @@ const PROVIDERS = {
       if (code !== 0) throw new Error(`exit ${code}: ${err}`);
       return out;
     },
-    async sleep(c) { await c.sb.experimentalPause(); },
-    async wake(c) { await c.sb.experimentalResume(); },
+    async sleep(c) {
+      c.snap = await c.sb.experimentalSnapshot();
+      await c.sb.terminate();
+    },
+    async wake(c) { c.sb = await c.modal.sandboxes.experimentalFromSnapshot(c.snap); },
     async destroy(c) {
       try { if (c.sb) await c.sb.terminate(); } finally { c.modal?.close(); }
     },
